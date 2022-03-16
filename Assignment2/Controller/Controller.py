@@ -1,3 +1,5 @@
+import random
+
 import utils
 from pygame.locals import *
 from Model.Drone import Drone
@@ -30,7 +32,7 @@ class Controller:
         self.__dmap.loadMap("test1.map")
         pygame.init()
         # load and set the logo
-        logo = pygame.image.load("assets/logo32x32.png")
+        logo = pygame.image.load("./assets/logo32x32.png")
         pygame.display.set_icon(logo)
         pygame.display.set_caption("Path in simple environment")
 
@@ -38,9 +40,18 @@ class Controller:
         screen = pygame.display.set_mode((400, 400))
         screen.fill(utils.WHITE)
 
+        dest_x = random.randint(0, 19)
+        dest_y = random.randint(0, 19)
+
+        while self.__dmap.surface[dest_x][dest_y] != 0 and dest_x != self.__drone.xCoordinate\
+                and dest_y != self.__drone.yCoordinate:
+            dest_x = random.randint(0, 19)
+            dest_y = random.randint(0, 19)
+
+        print(dest_x, dest_y)
+
         # define a variable to control the main loop
         running = True
-
 
         # main loop
         while running:
@@ -52,45 +63,46 @@ class Controller:
                     running = False
 
                 if event.type == KEYDOWN:
-                    self.move(self.__dmap)  # this call will be erased
+                    if event.key == K_LEFT:
+                        started_at = time.time()
+                        path = self.searchAStar(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
+                        print("Execution time for A*: %s" % (time.time() - started_at))
+                        screen.blit(self.displayAStar(self.__dmap.image(), path), (0, 0))
+                        pygame.display.flip()
+                    if event.key == K_RIGHT:
+                        started_at = time.time()
+                        greedy_path = self.searchGreedy(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
+                        print("Execution time for Greedy: %s" % (time.time() - started_at))
+                        screen.blit(self.displayGreedy(self.__dmap.image(), greedy_path), (0, 0))
+                        pygame.display.flip()
+                else:
+                    screen.blit(self.mapWithDrone(dest_x, dest_y, self.__dmap.image()), (0, 0))
+                    pygame.display.flip()
 
-            screen.blit(self.mapWithDrone(self.__dmap.image()), (0, 0))
-            pygame.display.flip()
-
-        # path = self.searchAStar(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, 4, 0)
-        # screen.blit(self.displayWithPath(self.__dmap.image(), path), (0, 0))
-        greedy_path = self.searchGreedy(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, 4, 0)
-        screen.blit(self.displayWithPath(self.__dmap.image(), greedy_path), (0, 0))
         pygame.display.flip()
 
         time.sleep(5)
         pygame.quit()
 
-    def move(self, detectedMap):
-        pressed_keys = pygame.key.get_pressed()
-        if self.__drone.xCoordinate > 0:
-            if pressed_keys[K_UP] and detectedMap.surface[self.__drone.xCoordinate - 1][self.__drone.yCoordinate] == 0:
-                self.__drone.xCoordinate = self.__drone.xCoordinate - 1
-        if self.__drone.xCoordinate < 19:
-            if pressed_keys[K_DOWN] and detectedMap.surface[self.__drone.xCoordinate + 1][self.__drone.yCoordinate] == 0:
-                self.__drone.xCoordinate = self.__drone.xCoordinate + 1
-
-        if self.__drone.yCoordinate > 0:
-            if pressed_keys[K_LEFT] and detectedMap.surface[self.__drone.xCoordinate][self.__drone.yCoordinate - 1] == 0:
-                self.__drone.yCoordinate = self.__drone.yCoordinate - 1
-        if self.__drone.yCoordinate < 19:
-            if pressed_keys[K_RIGHT] and detectedMap.surface[self.__drone.xCoordinate][self.__drone.yCoordinate + 1] == 0:
-                self.__drone.yCoordinate =self.__drone.yCoordinate + 1
-
-    def mapWithDrone(self, mapImage):
-        drona = pygame.image.load("drona.png")
+    def mapWithDrone(self, x, y, mapImage):
+        drona = pygame.image.load("./assets/drona.png")
         mapImage.blit(drona, (self.__drone.yCoordinate * 20, self.__drone.xCoordinate * 20))
+        flag = pygame.image.load("./assets/flag.png")
+        mapImage.blit(flag, (y * 20, x * 20))
 
         return mapImage
 
-    def displayWithPath(self, image, path):
+    def displayAStar(self, image, path):
         mark = pygame.Surface((20, 20))
         mark.fill(utils.GREEN)
+        for move in path:
+            image.blit(mark, (move[1] * 20, move[0] * 20))
+
+        return image
+
+    def displayGreedy(self, image, path):
+        mark = pygame.Surface((20, 20))
+        mark.fill(utils.RED)
         for move in path:
             image.blit(mark, (move[1] * 20, move[0] * 20))
 

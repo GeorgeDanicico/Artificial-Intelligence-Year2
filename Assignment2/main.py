@@ -9,6 +9,7 @@ def main():
 
     x = randint(1, 19)
     y = randint(1, 19)
+
     drone = Drone(x, y)
 
     map = Map()
