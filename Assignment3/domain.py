@@ -5,10 +5,11 @@ from utils import *
 import numpy as np
 import pickle
 
+
 # the glass gene can be replaced with int or float, or other types
 # depending on your problem's representation
 
-
+# A gene represents in our context one of the 4 possible directions
 class Gene:
     def __init__(self):
         # random initialise the gene according to the representation
@@ -21,6 +22,7 @@ class Gene:
         return self.__gene == other.get_value()
 
 
+# an individual represents a possible solution, and in our context, it means a possible path
 class Individual:
     def __init__(self, size=0):
         self.__size = size
@@ -31,6 +33,12 @@ class Individual:
         return self.__fitness
 
     def convert_to_path(self, current_position):
+        """
+        We keep an array of the possible direction and we need the starting position
+        of the drone in order to build the path
+        :param current_position: the initial position of the drone.
+        :return: the path as an array with coordinates of the cells
+        """
         path = [(current_position[0], current_position[1])]
         for gene in self.__collection:
             next_x = path[-1][0] + DIRECTIONS[gene.get_value()][0]
@@ -41,10 +49,19 @@ class Individual:
         return path
 
     def compute_fitness(self, map, current_position):
+        """
+        We compute the fitness of a possible solution:
+            - if a gene in the individual is not valid, we skip it and decrease the score
+            - if a gene in the individual is valid, we increment the fitness, and then for every
+        cell that we can reach from that valid cell, we increment the fitness
+        :param map: the given map
+        :param current_position: the starting position of the drone
+        :return: none
+        """
         self.__fitness = 0
 
         path = self.convert_to_path(current_position)
-        visited = []  # make sure not to go through the same block, because they are generated randomly.
+        visited = []  # make sure not to go through the same cell, because they are generated randomly.
 
         for index in range(0, len(self.__collection)):
             x, y = path[index][0], path[index][1]
@@ -52,10 +69,11 @@ class Individual:
             # make sure that we don't visit the same block
             if (x, y) not in visited:
                 if not map.valid_neighbour(x, y):
-                    self.__fitness -= 20
+                    self.__fitness -= 15
                 else:
                     self.__fitness += 1
                     visited.append((x, y))
+                    # iterate in all 4 directions to explore as much as possible
                     for direction in DIRECTIONS:
                         new_x = x + direction[0]
                         new_y = y + direction[1]
@@ -68,11 +86,25 @@ class Individual:
                             new_y = new_y + direction[1]
 
     def mutate(self, mutate_probability=0.04):
+        """
+        Mutate means to change randomly a gene in the individual,
+        and in order to do that we generate a new gene and replace a random index
+        :param mutate_probability: the mutate probability
+        :return: none
+        """
         if random() < mutate_probability:
             index = randint(0, self.__size - 1)
             self.__collection[index] = Gene()
 
     def crossover(self, other_parent, crossover_probability=0.8):
+        """
+        We create 2 children(offsprings) from 2 parents by aplying a fixed point.
+        In this case we pick a random index, and then combine the halves of the parents in order
+        to generate the children.
+        :param other_parent: another individual object
+        :param crossover_probability: the probability to apply a crossover
+        :return: 2 individual objects that represents the generated children.
+        """
         offspring1, offspring2 = Individual(self.__size), Individual(self.__size)
         if random() < crossover_probability:
             index = randint(0, self.__size - 1)
@@ -82,7 +114,7 @@ class Individual:
 
         return offspring1, offspring2
 
-    
+# a population means a collection of possible solutions
 class Population:
     def __init__(self, population_size=0, individual_size=0):
         self.__population_size = population_size
@@ -116,19 +148,27 @@ class Population:
         if k > len(self.__collection):
             k = len(self.__collection)
 
+        # we sort the population by the fitness value of each individual,
+        # and after that we select the best k individuals
         selected_individuals = sorted(self.__collection, key=lambda x: x.get_fitness_value(), reverse=True)
         return selected_individuals[:k]
 
     def get_best_path(self, current_position):
+        """
+        Returns the best path
+        :param current_position: the initial position of the drone
+        :return: the best path
+        """
         individuals = sorted(self.__collection, key=lambda x: x.get_fitness_value(), reverse=True)
         return individuals[0].convert_to_path(current_position)
+
 
 class Map:
     def __init__(self, n=20, m=20):
         self.n = n
         self.m = m
         self.surface = np.zeros((self.n, self.m))
-    
+
     def random_map(self, fill=0.2):
         for i in range(self.n):
             for j in range(self.m):
@@ -141,7 +181,7 @@ class Map:
         return False
 
     def __str__(self):
-        string=""
+        string = ""
         for i in range(self.n):
             for j in range(self.m):
                 string = string + str(int(self.surface[i][j]))
@@ -160,6 +200,3 @@ class Map:
             self.m = dummy.m
             self.surface = dummy.surface
             f.close()
-
-                
-    

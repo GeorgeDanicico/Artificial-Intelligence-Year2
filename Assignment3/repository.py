@@ -25,17 +25,19 @@ class Repository:
         return Population(args[0], args[1])
 
     def evaluate_population(self):
+        # evaluate all the individuals of the current population
         return self.__populations[-1].evaluate_individuals(self.__map, self.__current_position)
 
     def make_selection(self, size):
         """
-        select a population
+        select the best individuals from the current population
         :param size: size of the population
-        :return: a selection
+        :return: an array of individuals
         """
         return self.__populations[-1].selection(size)
 
     def get_best_path(self):
+        # we return the best path from the population with the highest fitness average
         ordered_populations = sorted(self.__populations, key=lambda x: x.get_average_fitness(), reverse=True)
         return ordered_populations[0].get_best_path(self.__current_position)
 

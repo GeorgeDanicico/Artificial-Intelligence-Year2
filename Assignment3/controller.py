@@ -59,6 +59,8 @@ class Controller:
         # create offsprings by crossover of the parents
         # apply some mutation s
         # selection of the survivors
+
+        # compute the fitness function for the entire population
         self.__repository.evaluate_population()
         parents_selection = self.__repository.make_selection(self.population_size)
         parents_length = len(parents_selection)
@@ -69,6 +71,7 @@ class Controller:
         for _ in range(parents_length // 2):
             first_parent = halve_one[randint(0, (parents_length // 2) - 1)]
             second_parent = halve_two[randint(0, (parents_length // 2) - 1)]
+            # apply crossover on half of the parents.
             if (first_parent, second_parent) not in pairs:
                 pairs.append((first_parent, second_parent))
                 offspring1, offspring2 = first_parent.crossover(second_parent, self.crossover_probability)
@@ -77,6 +80,7 @@ class Controller:
                 self.__repository.add_individual(offspring1)
                 self.__repository.add_individual(offspring2)
 
+        # keep only the survivors...the individuals with the best fitness
         self.__repository.set_population(self.__repository.make_selection(self.population_size))
 
     def run(self):
@@ -87,6 +91,8 @@ class Controller:
         #    save the information need it for the satistics
         
         # return the results and the info for statistics
+
+        # compute the average fitness for an interation
         average_fitness = []
         for _ in range(0, self.iterations_count):
             self.iteration()
@@ -101,7 +107,7 @@ class Controller:
         # run the algorithm
         # return the results and the statistics
         for index in range(0, self.runs):
-            seed(index)
+            seed(index)  # change the seed every run to avoid possible duplicates
             population = self.__repository.create_population((self.population_size, self.individual_size))
             self.__repository.add_population(population)
             self.run()

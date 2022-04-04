@@ -78,6 +78,7 @@ class UI:
             average_of_fitnesses.append(self.__statistics_info[index][0])
             deviation.append(self.__statistics_info[index][1])
 
+        print(average_of_fitnesses)
         pl.plot(indices, average_of_fitnesses)
         pl.plot(indices, deviation)
         pl.show()
