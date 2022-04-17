@@ -6,14 +6,15 @@ import random
 from utils import *
 import gui
 
+
 class Controller:
     def __init__(self, map, drone):
         self.map = map
         self.drone = drone
 
-        self.__sensors = SensorList(self.map)
+        self.sensors = SensorList(self.map)
         self.pheromones = [[1.0 for _ in range(SENSOR_COUNT * 4)] for _ in range(SENSOR_COUNT * 4)]
-        self.distances = self.__sensors.getDistBetweenSensors()
+        self.distances = self.sensors.get_distances_between_sensors()
 
     def move_ants(self, ants, alpha, beta, q0):
         all_ants = [True for _ in ants]
@@ -64,43 +65,43 @@ class Controller:
 
         return self.choose_best_ant(ants)
 
-    def charge_sensors(self, remaining_battery, available_sensors):
+    def charge_sensors(self, battery_status, available_sensors):
         sensors = []
-        for i in range(len(self.__sensors.get_sensor_list())):
+        for i in range(len(self.sensors.get_sensor_list())):
             if i in available_sensors:
-                sensors.append(self.__sensors.get_sensor_list()[i])
+                sensors.append(self.sensors.get_sensor_list()[i])
 
         energy = [0 for _ in sensors]
-        if remaining_battery <= 0:
+        if battery_status <= 0:
             return energy
 
         sensors.sort(key=lambda s: (s.get_accessible_positions()[-1] / s.get_max_energy()))
         i = 0
-        while i < len(sensors) and remaining_battery > 0:
-            currentSensorMaxEnergy = sensors[i].get_max_energy()
-            if remaining_battery > currentSensorMaxEnergy:
-                remaining_battery -= currentSensorMaxEnergy
-                energy[i] = currentSensorMaxEnergy
+        while i < len(sensors) and battery_status > 0:
+            current_sensor_max_energy = sensors[i].get_max_energy()
+            if battery_status > current_sensor_max_energy:
+                battery_status -= current_sensor_max_energy
+                energy[i] = current_sensor_max_energy
             else:
-                energy[i] = remaining_battery
-                remaining_battery = 0
+                energy[i] = battery_status
+                battery_status = 0
             i += 1
         return energy
 
-    def __updateBestSolution(self, bestSolution):
-        currentSolution = self.simulate_epoch(30, alpha=1.9, beta=0.9, q0=0.5, rho=0.05)
-        if currentSolution is None:
-            return bestSolution
+    def _update_best_choice(self, best_choice):
+        current_sol = self.simulate_epoch(30, alpha=1.9, beta=0.9, q0=0.5, rho=0.05)
+        if current_sol is None:
+            return best_choice
 
-        currentSolutionPathLength = len(currentSolution.get_path())
-        if bestSolution is None or currentSolutionPathLength > len(bestSolution.get_path()) \
-                or (currentSolutionPathLength == len(bestSolution.get_path()) and currentSolution.get_fitness() < bestSolution.get_fitness()):
-            return currentSolution  # new best solution
-        return bestSolution
+        length = len(current_sol.get_path())
+        if best_choice is None or length > len(best_choice.get_path()) \
+                or (length == len(best_choice.get_path()) and current_sol.get_fitness() < best_choice.get_fitness()):
+            return current_sol  # new best solution
+        return best_choice
 
     def generate_path(self, drone, sensors_path):
         [x, y] = drone.get_coordinates()
-        sensor_list = self.__sensors.get_sensor_list()
+        sensor_list = self.sensors.get_sensor_list()
         current_sensor = sensor_list[sensors_path[0]]
         full_path = self.map.searchAStar(x, y, current_sensor.get_x(), current_sensor.get_y())[::-1]
 
@@ -113,18 +114,18 @@ class Controller:
         return full_path
 
     def run(self):
-        bestSolution = None  # will be the one with the largest number of visible positions
+        best_choice = None  # will be the one with the largest number of visible positions
         for _ in range(1000):
-            bestSolution = self.__updateBestSolution(bestSolution)
+            best_choice = self._update_best_choice(best_choice)
 
-        energyLevels = self.charge_sensors(100 - bestSolution.get_fitness(), bestSolution.get_path())
-        print('Energy distributed: ', energyLevels)
-        print('Best path: ', bestSolution.get_path())
+        energy = self.charge_sensors(100 - best_choice.get_fitness(), best_choice.get_path())
+        print('Energy distributed: ', energy)
+        print('Best path: ', best_choice.get_path())
 
-        return self.generate_path(self.drone, bestSolution.get_path())
+        return self.generate_path(self.drone, best_choice.get_path())
 
     def view_map(self):
-        gui.movingDrone(self.map, self.__sensors, self.run())
+        gui.movingDrone(self.map, self.sensors, self.run())
 
     def get_map(self):
         return self.map
