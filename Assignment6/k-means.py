@@ -5,6 +5,7 @@ from statistics import *
 
 if __name__ == '__main__':
     clusters = [Cluster('A'), Cluster('B'), Cluster('C'), Cluster('D')]
+
     points = read_points_from_file()
     random_points = sample(points, 4)
 

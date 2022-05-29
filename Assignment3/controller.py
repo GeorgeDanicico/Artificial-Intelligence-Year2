@@ -8,11 +8,10 @@ class Controller:
     def __init__(self, repository):
         # args - list of parameters needed in order to create the controller
         self.__repository = repository
-        # self.__repository.createPopulation([20, 10])
-        self.population_size = 20
+        self.population_size = 30
         self.individual_size = 10
         self.runs = 30
-        self.iterations_count = 50
+        self.iterations_count = 150
         self.mutate_probability = 0.04
         self.crossover_probability = 0.8
         self.statistics_info = []
@@ -61,7 +60,6 @@ class Controller:
         # selection of the survivors
 
         # compute the fitness function for the entire population
-        self.__repository.evaluate_population()
         parents_selection = self.__repository.make_selection(self.population_size)
         parents_length = len(parents_selection)
 
@@ -75,8 +73,8 @@ class Controller:
             if (first_parent, second_parent) not in pairs:
                 pairs.append((first_parent, second_parent))
                 offspring1, offspring2 = first_parent.crossover(second_parent, self.crossover_probability)
-                offspring1.mutate(self.mutate_probability)
-                offspring2.mutate(self.mutate_probability)
+                offspring1.mutate(self.__repository.get_current_position(), self.__repository.get_map(), self.mutate_probability)
+                offspring2.mutate(self.__repository.get_current_position(), self.__repository.get_map(), self.mutate_probability)
                 self.__repository.add_individual(offspring1)
                 self.__repository.add_individual(offspring2)
 
@@ -110,6 +108,7 @@ class Controller:
             seed(index)  # change the seed every run to avoid possible duplicates
             population = self.__repository.create_population((self.population_size, self.individual_size))
             self.__repository.add_population(population)
+            self.__repository.evaluate_population()
             self.run()
 
         return self.__repository.get_best_path(), self.statistics_info

@@ -10,6 +10,9 @@ class Repository:
         self.__map = Map()
         self.__current_position = self.random_current_position()
 
+    def get_current_position(self):
+        return self.__current_position
+
     def add_population(self, population):
         self.__populations.append(population)
 
@@ -39,7 +42,7 @@ class Repository:
     def get_best_path(self):
         # we return the best path from the population with the highest fitness average
         ordered_populations = sorted(self.__populations, key=lambda x: x.get_average_fitness(), reverse=True)
-        return ordered_populations[0].get_best_path(self.__current_position)
+        return ordered_populations[0].get_best_path(self.__map, self.__current_position)
 
     def get_current_population(self):
         return self.__populations[-1].get_population()

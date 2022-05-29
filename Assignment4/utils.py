@@ -16,6 +16,12 @@ RIGHT = 3
 SENSOR = 2
 SENSOR_COUNT = 5
 ANT_MOVES = 5
+BATTERY_STATUS = 70
+
+# The information heuristic factor
+ALPHA = 1.9
+# the expectation heuristic factor
+BETA = 0.9
 
 # define indexes variations
 DIRECTIONS = [[-1, 0], [1, 0], [0, 1], [0, -1]]

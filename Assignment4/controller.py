@@ -13,16 +13,25 @@ class Controller:
         self.drone = drone
 
         self.sensors = SensorList(self.map)
-        self.pheromones = [[1.0 for _ in range(SENSOR_COUNT * 4)] for _ in range(SENSOR_COUNT * 4)]
+        self.pheromones = [[1.0 for _ in range(SENSOR_COUNT)] for _ in range(SENSOR_COUNT)]
         self.distances = self.sensors.get_distances_between_sensors()
 
     def move_ants(self, ants, alpha, beta, q0):
+        """
+        Move all the ants
+        :param ants:  ants array
+        :param alpha:
+        :param beta:
+        :param q0: the probability to pick the best solution
+        :return: the ants that could travel to all the sensors.
+        """
         all_ants = [True for _ in ants]
         for i in range(len(ants)):
             ant = ants[i]
-            for step in range(ANT_MOVES - 1):
-                found = ant.next_move(self.distances, self.pheromones, q0, alpha, beta)
-                if not found:
+            for j in range(ANT_MOVES - 1):
+                # if the ant can't perform a new move, we kill it
+                possible_move = ant.next_move(self.distances, self.pheromones, q0, alpha, beta)
+                if not possible_move:
                     all_ants[i] = False
                     break
 
@@ -34,6 +43,11 @@ class Controller:
         return alive_ants
 
     def choose_best_ant(self, ants):
+        """
+        choose the ant with the best fitness
+        :param ants: the ants that travel to all the sensors.
+        :return: the best ant
+        """
         best_ant = None
         best_fitness = INF
 
@@ -43,8 +57,8 @@ class Controller:
                 best_ant = ant
         return best_ant
 
-    def simulate_epoch(self, ants_count, alpha, beta, q0, rho):
-        ants = [Ant(ANT_MOVES, 100) for _ in range(ants_count)]
+    def epoch(self, ants_count, alpha, beta, q0, rho):
+        ants = [Ant(ANT_MOVES, BATTERY_STATUS) for _ in range(ants_count)]
 
         ants = self.move_ants(ants, alpha, beta, q0)
 
@@ -66,6 +80,14 @@ class Controller:
         return self.choose_best_ant(ants)
 
     def charge_sensors(self, battery_status, available_sensors):
+        """
+        after traversing through all the sensors,
+        we distribute the remaining battery in order to get the maximum surveyed cells
+        :param battery_status: the remaining energy after a traversal
+        :param available_sensors:
+        :return:
+        """
+        print("Battery left after shortest path: ", battery_status)
         sensors = []
         for i in range(len(self.sensors.get_sensor_list())):
             if i in available_sensors:
@@ -88,8 +110,9 @@ class Controller:
             i += 1
         return energy
 
-    def _update_best_choice(self, best_choice):
-        current_sol = self.simulate_epoch(30, alpha=1.9, beta=0.9, q0=0.5, rho=0.05)
+    def _iteration(self, best_choice):
+
+        current_sol = self.epoch(30, alpha=1.9, beta=0.9, q0=0.5, rho=0.05)
         if current_sol is None:
             return best_choice
 
@@ -116,9 +139,9 @@ class Controller:
     def run(self):
         best_choice = None  # will be the one with the largest number of visible positions
         for _ in range(1000):
-            best_choice = self._update_best_choice(best_choice)
+            best_choice = self._iteration(best_choice)
 
-        energy = self.charge_sensors(100 - best_choice.get_fitness(), best_choice.get_path())
+        energy = self.charge_sensors(BATTERY_STATUS - best_choice.get_fitness(), best_choice.get_path())
         print('Energy distributed: ', energy)
         print('Best path: ', best_choice.get_path())
 

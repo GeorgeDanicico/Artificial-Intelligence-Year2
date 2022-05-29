@@ -39,10 +39,9 @@ class Controller:
             if not self._moveDSF():
                 running = False
                 time.sleep(3)
-            time.sleep(0.01)
+            time.sleep(0.5)
             screen.blit(self.__dmap.image(self.__drone.xCoordinate, self.__drone.yCoordinate), (400, 0))
             pygame.display.flip()
-
 
         pygame.quit()
 
@@ -72,7 +71,6 @@ class Controller:
             self.__drone.xCoordinate = prev_x
             self.__drone.yCoordinate = prev_y
             return True
-
 
         return False
 

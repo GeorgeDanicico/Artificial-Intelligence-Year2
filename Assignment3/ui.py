@@ -59,6 +59,36 @@ class UI:
               '\t6. Set crossover probability\n'
               '\t0. Go back')
 
+    def set_population_size(self):
+        new_value = int(input('Enter population size: '))
+        self.__controller.set_population_size(new_value)
+        print('Population size has been updated.\n')
+
+    def set_individual_size(self):
+        new_value = int(input('Enter individual size: '))
+        self.__controller.set_individual_size(new_value)
+        print('Population size has been updated.\n')
+
+    def set_mutate_probability(self):
+        new_value = int(input('Enter mutate probability: '))
+        self.__controller.set_mutate_probability(new_value)
+        print('Mutate probability has been updated.\n')
+
+    def set_crossover_probability(self):
+        new_value = int(input('Enter crossover probability: '))
+        self.__controller.set_crossover_probability(new_value)
+        print('Crossover probability has been updated.\n')
+
+    def set_iterations(self):
+        new_value = int(input('Enter iterations: '))
+        self.__controller.set_iterations(new_value)
+        print('Number of iterations has been updated.\n')
+
+    def set_runs(self):
+        new_value = int(input('Enter number of runs: '))
+        self.__controller.set_runs(new_value)
+        print('Number of runs has been updated.\n')
+
     def load_map(self):
         file_name = input("The file name: ")
         self.__controller.load_map(file_name)
@@ -71,16 +101,11 @@ class UI:
 
     def view_statistics(self):
         indices = [index for index in range(len(self.__statistics_info))]
-        average_of_fitnesses = []
-        deviation = []
+        average_of_fitnesses = [stat[0] for stat in self.__statistics_info]
+        deviation = [stat[1] for stat in self.__statistics_info]
 
-        for index in range(len(self.__statistics_info)):
-            average_of_fitnesses.append(self.__statistics_info[index][0])
-            deviation.append(self.__statistics_info[index][1])
-
-        print(average_of_fitnesses)
-        pl.plot(indices, average_of_fitnesses)
-        pl.plot(indices, deviation)
+        pl.plot(indices, average_of_fitnesses, label="Average Fitness")
+        pl.plot(indices, deviation, label="Standard Deviation")
         pl.show()
 
     def setup_parameters(self):
@@ -92,17 +117,17 @@ class UI:
                 finished = True
                 print('Back...\n')
             elif choice == '1':
-                pass
+                self.set_population_size()
             elif choice == '2':
-                pass
+                self.set_individual_size()
             elif choice == '3':
-                pass
+                self.set_iterations()
             elif choice == '4':
-                pass
+                self.set_runs()
             elif choice == '5':
-                pass
+                self.set_mutate_probability()
             elif choice == '6':
-                pass
+                self.set_crossover_probability()
             else:
                 print("Wrong choice!\n\n")
 

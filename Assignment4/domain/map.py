@@ -49,9 +49,14 @@ class Map:
         return abs(initial_x - final_x) + abs(initial_y - final_y)
 
     def searchAStar(self, initialX, initialY, finalX, finalY):
-        # TO DO
-        # implement the search function and put it in controller
-        # returns a list of moves as a list of pairs [x,y]
+        """
+        Returns the shortest path between 2 cells in the matrix using A* alg
+        :param initialX:
+        :param initialY:
+        :param finalX:
+        :param finalY:
+        :return:
+        """
         distances = {(initialX, initialY): 0, }  # represents the g function from the formula
         heuristics_distances = {(initialX, initialY): 0, }  # represents the h function from the formula
         priority_queue = PriorityQueue()

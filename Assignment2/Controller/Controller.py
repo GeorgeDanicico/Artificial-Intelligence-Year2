@@ -2,9 +2,7 @@ import random
 
 import utils
 from pygame.locals import *
-from Model.Drone import Drone
-from Model.Map import Map
-from random import randint
+import math
 import pygame
 import time
 from queue import PriorityQueue
@@ -48,63 +46,119 @@ class Controller:
             dest_x = random.randint(0, 19)
             dest_y = random.randint(0, 19)
 
-        print(dest_x, dest_y)
+        screen.blit(self.mapWithDrone(dest_x, dest_y, self.__dmap.image()), (0, 0))
 
-        # define a variable to control the main loop
-        running = True
+        started_at = time.time()
+        path = self.searchAStar(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
+        print('-------------------------------------------------------')
+        print('Path determined by A*: ', path)
+        print("Execution time for A*: %s" % (time.time() - started_at))
+        print('-------------------------------------------------------')
+        screen.blit(self.displayPath(self.__dmap.image(), path, dest_x, dest_y), (0, 0))
 
-        # main loop
-        while running:
-            # event handling, gets all event from the event queue
-            for event in pygame.event.get():
-                # only do something if the event is of type QUIT
-                if event.type == pygame.QUIT:
-                    # change the value to False, to exit the main loop
-                    running = False
-
-                if event.type == KEYDOWN:
-                    if event.key == K_LEFT:
-                        started_at = time.time()
-                        path = self.searchAStar(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
-                        print("Execution time for A*: %s" % (time.time() - started_at))
-                        screen.blit(self.displayAStar(self.__dmap.image(), path), (0, 0))
-                        pygame.display.flip()
-                    if event.key == K_RIGHT:
-                        started_at = time.time()
-                        greedy_path = self.searchGreedy(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
-                        print("Execution time for Greedy: %s" % (time.time() - started_at))
-                        screen.blit(self.displayGreedy(self.__dmap.image(), greedy_path), (0, 0))
-                        pygame.display.flip()
-                else:
-                    screen.blit(self.mapWithDrone(dest_x, dest_y, self.__dmap.image()), (0, 0))
-                    pygame.display.flip()
+        # started_at = time.time()
+        # path = self.searchGreedy(self.__dmap, self.__drone.xCoordinate, self.__drone.yCoordinate, dest_x, dest_y)
+        # print('-------------------------------------------------------')
+        # print('Path determined by Greedy: ', path)
+        # print("Execution time for Greedy: %s" % (time.time() - started_at))
+        # print('-------------------------------------------------------')
+        # screen.blit(self.displayPath(self.__dmap.image(), path, dest_x, dest_y), (0, 0))
+        #
+        # started_at = time.time()
+        # path = self.simulated_annealing(10000, 10000, dest_x, dest_y)
+        # print('-------------------------------------------------------')
+        # print('Path determined by SA: ', path)
+        # print("Execution time for SA: %s" % (time.time() - started_at))
+        # print('-------------------------------------------------------')
+        # screen.blit(self.displayPath(self.__dmap.image(), path, dest_x, dest_y), (0, 0))
 
         pygame.display.flip()
+        time.sleep(1)
+
+        # for move in reversed(path):
+        #     self.__drone.xCoordinate = move[0]
+        #     self.__drone.yCoordinate = move[1]
+        #     screen.blit(self.mapWithDrone(dest_x, dest_y, self.__dmap.image()), (0, 0))
+        #     screen.blit(self.displayPath(self.__dmap.image(), path, dest_x, dest_y), (0, 0))
+        #     pygame.display.flip()
+        #     time.sleep(0.25)
+
+        for move in path:
+            self.__drone.xCoordinate = move[0]
+            self.__drone.yCoordinate = move[1]
+            screen.blit(self.mapWithDrone(dest_x, dest_y, self.__dmap.image()), (0, 0))
+            screen.blit(self.displayPath(self.__dmap.image(), path, dest_x, dest_y), (0, 0))
+            pygame.display.flip()
+            time.sleep(0.01)
 
         time.sleep(5)
         pygame.quit()
 
     def mapWithDrone(self, x, y, mapImage):
-        drona = pygame.image.load("./assets/drona.png")
-        mapImage.blit(drona, (self.__drone.yCoordinate * 20, self.__drone.xCoordinate * 20))
         flag = pygame.image.load("./assets/flag.png")
         mapImage.blit(flag, (y * 20, x * 20))
+        drona = pygame.image.load("./assets/drona.png")
+        mapImage.blit(drona, (self.__drone.yCoordinate * 20, self.__drone.xCoordinate * 20))
 
         return mapImage
 
-    def displayAStar(self, image, path):
+    def simulated_annealing(self, temperature, iterations, dest_x, dest_y):
+
+        x = self.__drone.xCoordinate
+        y = self.__drone.yCoordinate
+        cell = [x, y]
+        moves = [cell]
+        k = 0
+
+        while k <= iterations:
+            k += 1
+            T = temperature / k
+            if [x, y] == [dest_x, dest_y]:
+                return moves
+            # generate the neighbours of the drone
+            neighbours = []
+
+            for pos in utils.DIRECTIONS:
+                new_x = x + pos[0]
+                new_y = y + pos[1]
+
+                if 0 <= new_x <= 19 and 0 <= new_y <= 19 and self.__dmap.surface[new_x][new_y] == 0:
+                    neighbours.append([new_x, new_y])
+
+            # pick a random neighbour
+            next_cell = random.choice(neighbours)
+
+            f1 = self.heuristic(next_cell[0], next_cell[1], dest_x, dest_y)
+            f2 = self.heuristic(x, y, dest_x, dest_y)
+
+            if f1 < f2:
+                moves.append(next_cell)
+                x = next_cell[0]
+                y = next_cell[1]
+            else:
+                r = random.uniform(0, 1)
+                E = f1 - f2
+
+                if r < math.exp(E / T):
+                    moves.append(next_cell)
+                    x = next_cell[0]
+                    y = next_cell[1]
+
+        return moves
+
+    def displayPath(self, image, path, dest_x, dest_y):
         mark = pygame.Surface((20, 20))
         mark.fill(utils.GREEN)
         for move in path:
-            image.blit(mark, (move[1] * 20, move[0] * 20))
-
-        return image
-
-    def displayGreedy(self, image, path):
-        mark = pygame.Surface((20, 20))
-        mark.fill(utils.RED)
-        for move in path:
-            image.blit(mark, (move[1] * 20, move[0] * 20))
+            if move != [self.__drone.xCoordinate, self.__drone.yCoordinate]:
+                image.blit(mark, (move[1] * 20, move[0] * 20))
+                flag = pygame.image.load("./assets/flag.png")
+                image.blit(flag, (dest_y * 20, dest_x * 20))
+            else:
+                flag = pygame.image.load("./assets/flag.png")
+                image.blit(flag, (dest_y * 20, dest_x * 20))
+                drona = pygame.image.load("./assets/drona.png")
+                image.blit(drona, (self.__drone.yCoordinate * 20, self.__drone.xCoordinate * 20))
 
         return image
 
@@ -116,7 +170,6 @@ class Controller:
         # TO DO
         # implement the search function and put it in controller
         # returns a list of moves as a list of pairs [x,y]
-        moves = [[initialX, initialY]]
         distances = {(initialX, initialY): 0, }  # represents the g function from the formula
         heuristics_distances = {(initialX, initialY): 0, }  # represents the h function from the formula
         priority_queue = PriorityQueue()

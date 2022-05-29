@@ -74,23 +74,23 @@ class Cluster:
                 self.label = fr
 
     def compute_statistics(self, points):
-        TP = FP = TN = FN = 0
+        true_positive = false_positive = true_negative = false_negative = 0
 
         for point in self.points:
             if point.label == self.label:
-                TP += 1
+                true_positive += 1
             else:
-                FP += 1
+                false_positive += 1
         for point in points:
             if point not in self.points and point.cluster.label != self.label:
                 if point.get_label() != self.label:
-                    TN += 1
+                    true_negative += 1
                 else:
-                    FN += 1
+                    false_negative += 1
 
-        accuracy = (TP + TN) / (TP + TN + FP + FN)
-        precision = TP / (TP + FP)
-        recall = TP / (TP + FN)
+        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+        precision = true_positive / (true_positive + false_positive)
+        recall = true_positive / (true_positive + false_negative)
         score = 2 * precision * recall / (precision + recall)
 
         return accuracy, precision, recall, score
